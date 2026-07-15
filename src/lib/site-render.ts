@@ -96,12 +96,15 @@ function navLabel(p: SitePage): string {
   return label.length > 24 ? label.slice(0, 22) + "…" : label;
 }
 
-export function buildNav(plan: SitePlan, opts: { hrefMode: "path" | "hash"; activePath?: string }): string {
+export function buildNav(plan: SitePlan, opts: { hrefMode: "path" | "hash"; activePath?: string; hrefFor?: (p: SitePage) => string }): string {
   return plan.pages
     .map((p) => {
       const label = esc(navLabel(p));
       const isActive = opts.activePath === p.path;
       const cls = isActive ? ' class="active"' : "";
+      if (opts.hrefFor) {
+        return `<a href="${esc(opts.hrefFor(p))}"${cls}>${label}</a>`;
+      }
       if (opts.hrefMode === "hash") {
         return `<a href="#" data-nav-path="${esc(p.path)}"${cls}>${label}</a>`;
       }
@@ -110,20 +113,23 @@ export function buildNav(plan: SitePlan, opts: { hrefMode: "path" | "hash"; acti
     .join("");
 }
 
-export function buildPreviewHtml(plan: SitePlan, page: SitePage, assets: AssetMap): string {
-  const nav = buildNav(plan, { hrefMode: "hash", activePath: page.path });
+export function buildPreviewHtml(plan: SitePlan, page: SitePage, assets: AssetMap, opts?: { hrefFor?: (p: SitePage) => string }): string {
+  const nav = buildNav(plan, { hrefMode: "hash", activePath: page.path, hrefFor: opts?.hrefFor });
   const sections = page.sections.map((s) => renderSection(s, assets, plan.imageSlots))
     .join("\n")
     .replace(/src="\/images\/([^"]+)\.png"/g, (_m, slotId) => {
       const a = assets[slotId];
       return a?.url ? `src="${esc(a.url)}"` : `src=""`;
     });
+  const homePage = plan.pages.find((p) => p.slug === "index" || p.path === "/") ?? plan.pages[0];
+  const logoHref = opts?.hrefFor ? esc(opts.hrefFor(homePage)) : "#";
+  const logoAttrs = opts?.hrefFor ? "" : ' data-nav-path="/"';
   return `<!doctype html><html lang="${plan.language}"><head><meta charset="utf-8"><title>${esc(page.title)}</title><meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="${googleFontsHref(plan)}">
 <style>${themeVarsCss(plan)}${SITE_CSS}
 header.nav nav a.active{color:var(--brand2);font-weight:600}</style></head>
-<body><header class="nav"><a href="#" data-nav-path="/" style="font-weight:700">${esc(plan.siteName)}</a><nav>${nav}</nav></header><main>${sections}</main><footer class="foot">© ${new Date().getFullYear()} ${esc(plan.siteName)}</footer>
+<body><header class="nav"><a href="${logoHref}"${logoAttrs} style="font-weight:700">${esc(plan.siteName)}</a><nav>${nav}</nav></header><main>${sections}</main><footer class="foot">© ${new Date().getFullYear()} ${esc(plan.siteName)}</footer>
 <script>
 document.addEventListener('click', function(e){
   var a = e.target && e.target.closest && e.target.closest('a[data-nav-path]');

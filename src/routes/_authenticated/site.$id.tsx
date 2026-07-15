@@ -8,7 +8,7 @@ import { SiteHeader } from "@/components/site-header";
 import { buildPreviewHtml } from "@/lib/site-render";
 import type { SitePlan } from "@/lib/site-schema";
 import { streamImage, base64FromDataUrl } from "@/lib/stream-image";
-import { Download, Loader2, ImageIcon, TrendingUp, Code2, Eye, Search, RefreshCcw, Sparkles, AlertTriangle } from "lucide-react";
+import { Download, Loader2, ImageIcon, TrendingUp, Code2, Eye, Search, RefreshCcw, Sparkles, AlertTriangle, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/site/$id")({
@@ -101,27 +101,18 @@ function SitePage() {
             <TabsBar tab={tab} setTab={setTab} score={site.seo_score} />
 
             {tab === "preview" && plan && (
-              <PreviewTab plan={plan} assets={assetMap} activePage={activePage} setActivePage={setActivePage} />
+              <PreviewTab siteId={id} plan={plan} assets={assetMap} activePage={activePage} setActivePage={setActivePage} />
             )}
             {tab === "seo" && plan && <SeoTab plan={plan} score={site.seo_score} />}
             {tab === "images" && plan && (
               <ImagesTab
                 plan={plan}
                 assets={assets}
-                onGenerate={async (slotId, prompt) => {
-                  toast.info(`Generando imagen: ${slotId}`);
-                  let finalUrl = "";
-                  try {
-                    await streamImage(prompt, (f) => {
-                      if (f.isFinal) finalUrl = f.dataUrl;
-                    }, { model: (site.config as any)?.imageModel ?? "gpt-image-1", quality: "high" });
-                    if (!finalUrl) throw new Error("Sin imagen final");
-                    await saveImg({ data: { siteId: id, slot: slotId, prompt, base64: base64FromDataUrl(finalUrl) } });
-                    toast.success("Imagen guardada");
-                    q.refetch();
-                  } catch (e: any) {
-                    toast.error(e.message ?? "Error");
-                  }
+                imageModel={(site.config as any)?.imageModel ?? "gpt-image-1"}
+                onSave={async (slotId, prompt, base64) => {
+                  await saveImg({ data: { siteId: id, slot: slotId, prompt, base64 } });
+                  toast.success(`Imagen "${slotId}" guardada — ya visible en el Preview`);
+                  q.refetch();
                 }}
               />
             )}
@@ -188,7 +179,7 @@ function TabsBar({ tab, setTab, score }: { tab: Tab; setTab: (t: Tab) => void; s
   );
 }
 
-function PreviewTab({ plan, assets, activePage, setActivePage }: { plan: SitePlan; assets: Record<string, { url: string; alt: string }>; activePage: number; setActivePage: (n: number) => void }) {
+function PreviewTab({ siteId, plan, assets, activePage, setActivePage }: { siteId: string; plan: SitePlan; assets: Record<string, { url: string; alt: string }>; activePage: number; setActivePage: (n: number) => void }) {
   const page = plan.pages[activePage] ?? plan.pages[0];
   const html = useMemo(() => buildPreviewHtml(plan, page, assets), [plan, page, assets]);
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -205,12 +196,22 @@ function PreviewTab({ plan, assets, activePage, setActivePage }: { plan: SitePla
   }, [plan, setActivePage]);
   return (
     <div>
-      <div className="mb-3 flex flex-wrap gap-2">
-        {plan.pages.map((p, i) => (
-          <button key={p.slug} onClick={() => setActivePage(i)} className={`rounded-full border px-3 py-1 text-xs ${i === activePage ? "border-brand bg-brand/10 text-foreground" : "border-border text-muted-foreground hover:text-foreground"}`}>
-            {p.path}
-          </button>
-        ))}
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap gap-2">
+          {plan.pages.map((p, i) => (
+            <button key={p.slug} onClick={() => setActivePage(i)} className={`rounded-full border px-3 py-1 text-xs ${i === activePage ? "border-brand bg-brand/10 text-foreground" : "border-border text-muted-foreground hover:text-foreground"}`}>
+              {p.path}
+            </button>
+          ))}
+        </div>
+        <a
+          href={`/api/preview/${siteId}/${page.slug}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 rounded-md border border-border bg-secondary px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground"
+        >
+          <ExternalLink className="h-3.5 w-3.5" /> Abrir en pestaña nueva
+        </a>
       </div>
       <div className="surface-card overflow-hidden rounded-2xl">
         <iframe ref={iframeRef} title="Preview" className="h-[800px] w-full bg-white" sandbox="allow-same-origin allow-scripts" />
@@ -271,32 +272,54 @@ function Kv({ k, v }: { k: string; v: string }) {
   );
 }
 
-function ImagesTab({ plan, assets, onGenerate }: {
+function ImagesTab({ plan, assets, imageModel, onSave }: {
   plan: SitePlan;
   assets: Array<{ slot: string | null; url: string | null; prompt: string | null }>;
-  onGenerate: (slotId: string, prompt: string) => Promise<void>;
+  imageModel: string;
+  onSave: (slotId: string, prompt: string, base64: string) => Promise<void>;
 }) {
   const [previews, setPreviews] = useState<Record<string, { url: string; final: boolean }>>({});
-  const [busy, setBusy] = useState<Record<string, boolean>>({});
+  const [busy, setBusy] = useState<string | null>(null);
+  const [queued, setQueued] = useState<string[]>([]);
+  const queueRef = useRef<Array<{ slotId: string; prompt: string }>>([]);
+  const processingRef = useRef(false);
+
   const existingBySlot = useMemo(() => {
     const m: Record<string, string> = {};
     for (const a of assets) if (a.slot && a.url) m[a.slot] = a.url;
     return m;
   }, [assets]);
 
-  async function handleClick(slotId: string, prompt: string) {
-    setBusy((b) => ({ ...b, [slotId]: true }));
-    try {
-      // Local streaming preview
-      await streamImage(prompt, (f) => {
-        setPreviews((p) => ({ ...p, [slotId]: { url: f.dataUrl, final: f.isFinal } }));
-      });
-      await onGenerate(slotId, prompt);
-    } catch (e: any) {
-      toast.error(e.message);
-    } finally {
-      setBusy((b) => ({ ...b, [slotId]: false }));
+  async function processQueue() {
+    if (processingRef.current) return;
+    processingRef.current = true;
+    while (queueRef.current.length > 0) {
+      const { slotId, prompt } = queueRef.current[0];
+      setBusy(slotId);
+      try {
+        let finalUrl = "";
+        await streamImage(prompt, (f) => {
+          setPreviews((p) => ({ ...p, [slotId]: { url: f.dataUrl, final: f.isFinal } }));
+          if (f.isFinal) finalUrl = f.dataUrl;
+        }, { model: imageModel, quality: "high" });
+        if (!finalUrl) throw new Error("Sin imagen final");
+        await onSave(slotId, prompt, base64FromDataUrl(finalUrl));
+      } catch (e: any) {
+        toast.error(`${slotId}: ${e.message ?? "Error"}`);
+      } finally {
+        queueRef.current = queueRef.current.slice(1);
+        setQueued(queueRef.current.map((q) => q.slotId));
+        setBusy(null);
+      }
     }
+    processingRef.current = false;
+  }
+
+  function handleClick(slotId: string, prompt: string) {
+    if (busy === slotId || queueRef.current.some((q) => q.slotId === slotId)) return;
+    queueRef.current = [...queueRef.current, { slotId, prompt }];
+    setQueued(queueRef.current.map((q) => q.slotId));
+    processQueue();
   }
 
   return (
@@ -322,11 +345,16 @@ function ImagesTab({ plan, assets, onGenerate }: {
               <p className="line-clamp-3 text-xs text-muted-foreground">{slot.prompt}</p>
               <button
                 onClick={() => handleClick(slot.id, slot.prompt)}
-                disabled={busy[slot.id]}
+                disabled={busy === slot.id || queued.includes(slot.id)}
                 className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-md btn-brand px-3 py-2 text-xs font-semibold hover:btn-brand-hover disabled:opacity-50"
               >
-                {busy[slot.id] ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-                {existingBySlot[slot.id] ? "Regenerar" : "Generar"}
+                {busy === slot.id ? (
+                  <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Generando…</>
+                ) : queued.includes(slot.id) ? (
+                  <><Loader2 className="h-3.5 w-3.5" /> En cola ({queued.indexOf(slot.id) + 1})</>
+                ) : (
+                  <><Sparkles className="h-3.5 w-3.5" /> {existingBySlot[slot.id] ? "Regenerar" : "Generar"}</>
+                )}
               </button>
             </div>
           </div>
