@@ -1,0 +1,9 @@
+# AstroForge
+
+> Generador de sitios Astro con IA: análisis SEO exhaustivo por sector, copy optimizado, imágenes IA ultra detalladas y proyecto Astro listo para desplegar.
+
+AstroForge crea sitios web completos con Astro a partir de una descripción del negocio. La IA analiza el sector, define keywords, escribe el copy multi-página con meta SEO y JSON-LD, genera imágenes detalladas y entrega un ZIP con el proyecto Astro listo para desplegar.
+
+## Pages
+- [Inicio](/): Landing con propuesta de valor, cómo funciona y features.
+- [Iniciar sesión](/auth): Acceso con email o Google.
