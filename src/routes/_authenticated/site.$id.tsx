@@ -111,7 +111,7 @@ function SitePage() {
                   try {
                     await streamImage(prompt, (f) => {
                       if (f.isFinal) finalUrl = f.dataUrl;
-                    }, { model: (site.config as any)?.imageModel ?? "openai/gpt-image-2", quality: "high" });
+                    }, { model: (site.config as any)?.imageModel ?? "gpt-image-1", quality: "high" });
                     if (!finalUrl) throw new Error("Sin imagen final");
                     await saveImg({ data: { siteId: id, slot: slotId, prompt, base64: base64FromDataUrl(finalUrl) } });
                     toast.success("Imagen guardada");

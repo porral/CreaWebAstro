@@ -1,0 +1,38 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-astroforge}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-astroforge}
+      POSTGRES_DB: ${POSTGRES_DB:-astroforge}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-astroforge}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-astroforge}:${POSTGRES_PASSWORD:-astroforge}@postgres:5432/${POSTGRES_DB:-astroforge}
+      JWT_SECRET: ${JWT_SECRET}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      UPLOADS_DIR: /data/uploads
+      PORT: 3000
+      NODE_ENV: production
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    volumes:
+      - uploads-data:/data/uploads
+
+volumes:
+  postgres-data:
+  uploads-data:

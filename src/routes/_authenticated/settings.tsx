@@ -13,14 +13,13 @@ export const Route = createFileRoute("/_authenticated/settings")({
 });
 
 const DEFAULTS: UserSettings = {
-  textModel: "google/gemini-3.5-flash",
-  imageModel: "google/gemini-3.1-flash-image",
+  textModel: "gpt-4o-mini",
+  imageModel: "gpt-image-1",
   language: "es",
   tone: "profesional",
   style: "moderno",
   pages: 5,
   useSemrush: false,
-  provider: "lovable",
 };
 
 function SettingsPage() {
@@ -60,31 +59,14 @@ function SettingsPage() {
           >
             <Field label="Modelo de texto por defecto">
               <select value={form.textModel} onChange={(e) => up("textModel", e.target.value)} className={inputCls}>
-                <optgroup label="Google Gemini">
-                  <option value="google/gemini-3.5-flash">Gemini 3.5 Flash (recomendado)</option>
-                  <option value="google/gemini-3.1-pro-preview">Gemini 3.1 Pro (máxima calidad)</option>
-                  <option value="google/gemini-3.1-flash-lite">Gemini 3.1 Flash Lite (económico)</option>
-                  <option value="google/gemini-3-flash-preview">Gemini 3 Flash (preview)</option>
-                  <option value="google/gemini-2.5-pro">Gemini 2.5 Pro</option>
-                  <option value="google/gemini-2.5-flash">Gemini 2.5 Flash</option>
-                </optgroup>
-                <optgroup label="OpenAI">
-                  <option value="openai/gpt-5.5">GPT-5.5 (top razonamiento)</option>
-                  <option value="openai/gpt-5.4">GPT-5.4</option>
-                  <option value="openai/gpt-5.4-mini">GPT-5.4 Mini</option>
-                  <option value="openai/gpt-5.4-nano">GPT-5.4 Nano</option>
-                  <option value="openai/gpt-5">GPT-5</option>
-                </optgroup>
+                <option value="gpt-4o-mini">GPT-4o mini (recomendado)</option>
+                <option value="gpt-4o">GPT-4o (máxima calidad)</option>
               </select>
             </Field>
 
             <Field label="Modelo de imagen por defecto">
               <select value={form.imageModel} onChange={(e) => up("imageModel", e.target.value)} className={inputCls}>
-                <option value="google/gemini-3.1-flash-image">Nano Banana 2 (rápido, alta calidad)</option>
-                <option value="google/gemini-3-pro-image">Gemini 3 Pro Image (ultra calidad)</option>
-                <option value="google/gemini-2.5-flash-image">Nano Banana</option>
-                <option value="openai/gpt-image-2">gpt-image-2</option>
-                <option value="openai/gpt-image-1-mini">gpt-image-1 mini (económico)</option>
+                <option value="gpt-image-1">gpt-image-1</option>
               </select>
             </Field>
 

@@ -17,6 +17,7 @@ import { Route as ApiGenerateImageRouteImport } from './routes/api/generate-imag
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedNewRouteImport } from './routes/_authenticated/new'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as ApiAssetsSplatRouteImport } from './routes/api/assets.$'
 import { Route as AuthenticatedSiteIdRouteImport } from './routes/_authenticated/site.$id'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
@@ -58,6 +59,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiAssetsSplatRoute = ApiAssetsSplatRouteImport.update({
+  id: '/api/assets/$',
+  path: '/api/assets/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedSiteIdRoute = AuthenticatedSiteIdRouteImport.update({
   id: '/site/$id',
   path: '/site/$id',
@@ -73,6 +79,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRoute
   '/api/generate-image': typeof ApiGenerateImageRoute
   '/site/$id': typeof AuthenticatedSiteIdRoute
+  '/api/assets/$': typeof ApiAssetsSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -83,6 +90,7 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsRoute
   '/api/generate-image': typeof ApiGenerateImageRoute
   '/site/$id': typeof AuthenticatedSiteIdRoute
+  '/api/assets/$': typeof ApiAssetsSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -95,6 +103,7 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/api/generate-image': typeof ApiGenerateImageRoute
   '/_authenticated/site/$id': typeof AuthenticatedSiteIdRoute
+  '/api/assets/$': typeof ApiAssetsSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -107,6 +116,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/api/generate-image'
     | '/site/$id'
+    | '/api/assets/$'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -117,6 +127,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/api/generate-image'
     | '/site/$id'
+    | '/api/assets/$'
   id:
     | '__root__'
     | '/'
@@ -128,6 +139,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/api/generate-image'
     | '/_authenticated/site/$id'
+    | '/api/assets/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -136,6 +148,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   ApiGenerateImageRoute: typeof ApiGenerateImageRoute
+  ApiAssetsSplatRoute: typeof ApiAssetsSplatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -196,6 +209,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/assets/$': {
+      id: '/api/assets/$'
+      path: '/api/assets/$'
+      fullPath: '/api/assets/$'
+      preLoaderRoute: typeof ApiAssetsSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/site/$id': {
       id: '/_authenticated/site/$id'
       path: '/site/$id'
@@ -229,6 +249,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   ApiGenerateImageRoute: ApiGenerateImageRoute,
+  ApiAssetsSplatRoute: ApiAssetsSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

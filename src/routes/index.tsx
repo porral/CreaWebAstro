@@ -71,8 +71,8 @@ function LandingPage() {
               { icon: FileCode2, title: "Proyecto Astro real", desc: "package.json, astro.config, Tailwind, sitemap.xml, robots.txt y layout Base." },
               { icon: Gauge, title: "Auditoría SEO", desc: "Puntuación 0-100 con sugerencias accionables y opción de aplicarlas con un clic." },
               { icon: LineChart, title: "Datos de Semrush", desc: "Si conectas tu cuenta, usamos KD real, SERP y keywords del sector." },
-              { icon: Sparkles, title: "Elige tu IA", desc: "Lovable AI por defecto (sin claves), o trae la tuya de OpenAI/Anthropic/Gemini." },
-              { icon: ImageIcon, title: "Imágenes premium", desc: "gpt-image-2 alta calidad o Gemini Pro Image ultra detallado." },
+              { icon: Sparkles, title: "Impulsado por OpenAI", desc: "GPT-4o para el copy y la estrategia SEO, gpt-image-1 para las imágenes." },
+              { icon: ImageIcon, title: "Imágenes premium", desc: "gpt-image-1 en alta calidad, ultra detallado y coherente con cada página." },
               { icon: Search, title: "Multi-idioma", desc: "Genera el copy en el idioma que necesites para tu público objetivo." },
             ].map((f, i) => (
               <div key={i} className="surface-card rounded-2xl p-5">

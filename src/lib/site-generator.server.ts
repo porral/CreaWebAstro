@@ -1,7 +1,7 @@
-// Server-only helpers to call Lovable AI Gateway (chat + image).
+// Server-only helpers to call the OpenAI API (chat + image).
 import type { SitePlan, GenerateInput } from "./site-schema";
 
-const GATEWAY = "https://ai.gateway.lovable.dev/v1";
+const OPENAI_API = "https://api.openai.com/v1";
 
 function buildPlannerPrompt(input: GenerateInput, semrushHints?: string) {
   const lang = input.language;
@@ -45,14 +45,14 @@ Return ONLY valid minified JSON, no markdown fences, matching exactly this TypeS
 }
 
 export async function generateSitePlanServer(input: GenerateInput, semrushHints?: string): Promise<SitePlan> {
-  const apiKey = process.env.LOVABLE_API_KEY;
-  if (!apiKey) throw new Error("Missing LOVABLE_API_KEY");
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) throw new Error("Missing OPENAI_API_KEY");
 
-  const res = await fetch(`${GATEWAY}/chat/completions`, {
+  const res = await fetch(`${OPENAI_API}/chat/completions`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
-      model: input.textModel || "google/gemini-3.5-flash",
+      model: input.textModel || "gpt-4o-mini",
       messages: [
         { role: "system", content: "You return strict minified JSON. No markdown, no prose. Never truncate the response — include every requested page and section in full." },
         { role: "user", content: buildPlannerPrompt(input, semrushHints) },
@@ -64,7 +64,7 @@ export async function generateSitePlanServer(input: GenerateInput, semrushHints?
 
   if (!res.ok) {
     const body = await res.text();
-    throw new Error(`AI gateway error [${res.status}]: ${body}`);
+    throw new Error(`OpenAI API error [${res.status}]: ${body}`);
   }
 
   const data = await res.json();

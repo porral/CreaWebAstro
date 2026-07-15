@@ -12,9 +12,8 @@ export const generateInputSchema = z.object({
   pages: z.number().int().min(3).max(12).default(5),
   style: z.enum(["moderno", "clasico", "minimal", "atrevido"]).default("moderno"),
   keywords: z.string().max(500).default(""),
-  provider: z.enum(["lovable", "byok"]).default("lovable"),
-  textModel: z.string().default("google/gemini-3.5-flash"),
-  imageModel: z.string().default("google/gemini-3.1-flash-image"),
+  textModel: z.string().default("gpt-4o-mini"),
+  imageModel: z.string().default("gpt-image-1"),
   useSemrush: z.boolean().default(false),
 });
 

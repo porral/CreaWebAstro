@@ -1,26 +1,22 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
 import { Sparkles, LogOut, LayoutDashboard, Plus, Settings } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { getSessionFn, signOutFn } from "@/lib/auth.functions";
 
 export function SiteHeader() {
-  const [email, setEmail] = useState<string | null>(null);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const getSession = useServerFn(getSessionFn);
+  const signOut = useServerFn(signOutFn);
 
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
-      setEmail(session?.user?.email ?? null);
-    });
-    return () => sub.subscription.unsubscribe();
-  }, []);
+  const sessionQ = useQuery({ queryKey: ["session"], queryFn: () => getSession() });
+  const email = sessionQ.data?.email ?? null;
 
-  async function signOut() {
+  async function handleSignOut() {
     await queryClient.cancelQueries();
+    await signOut();
     queryClient.clear();
-    await supabase.auth.signOut();
     navigate({ to: "/auth", replace: true });
   }
 
@@ -43,7 +39,7 @@ export function SiteHeader() {
               <Link to="/settings" title="Ajustes" className="rounded-md border border-border p-1.5 text-muted-foreground hover:text-foreground">
                 <Settings className="h-4 w-4" />
               </Link>
-              <button onClick={signOut} title="Salir" className="rounded-md border border-border p-1.5 text-muted-foreground hover:text-foreground">
+              <button onClick={handleSignOut} title="Salir" className="rounded-md border border-border p-1.5 text-muted-foreground hover:text-foreground">
                 <LogOut className="h-4 w-4" />
               </button>
             </>
