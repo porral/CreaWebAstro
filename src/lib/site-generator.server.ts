@@ -77,7 +77,7 @@ TASK
    - "body" de secciones ≥ 40 palabras. PROHIBIDO usar placeholders, "Lorem ipsum", "Descripción aquí", frases genéricas o vacías, o repetir el mismo copy entre páginas.
 5. Escoge el JSON-LD correcto para el sector.
 6. Paleta de color (primary, accent, background oscuro, foreground claro) en HEX según el estilo pedido.
-7. Define 5-10 imageSlots con prompts ULTRA DETALLADOS (composición, iluminación, cámara/lente, estilo fotográfico, mood, paleta, contexto real del sector). Cada slot se asigna a la sección donde encaja temáticamente. Alt descriptivo con la keyword. IMPORTANTE: el campo "prompt" de cada imageSlot debe estar escrito EN ${lang} (nunca en inglés), con el mismo nivel de detalle.
+7. Define 5-10 imageSlots con prompts ULTRA DETALLADOS de al menos 60-100 palabras cada uno, listos para pegar directamente en un generador de imágenes. Cada prompt DEBE especificar explícitamente: (a) sujeto/escena exacta y contexto real del sector/negocio (nada genérico), (b) composición y encuadre (plano, ángulo, profundidad de campo), (c) iluminación (tipo, dirección, calidez), (d) cámara/lente (p.ej. "objetivo 35mm, f/1.8"), (e) estilo fotográfico o artístico y mood/atmósfera, (f) paleta de color coherente con brandColors, (g) texturas/materiales y detalles de fondo/primer plano relevantes. Cada slot se asigna a la sección donde encaja temáticamente. Alt descriptivo con la keyword. IMPORTANTE: el campo "prompt" de cada imageSlot debe estar escrito EN ${lang} (nunca en inglés), con el mismo nivel de detalle.
 8. TODO el copy en ${lang}. Nunca mezcles idiomas.
 9. Devuelve el JSON COMPLETO en UNA respuesta. No trunques. Sin texto antes ni después.
 

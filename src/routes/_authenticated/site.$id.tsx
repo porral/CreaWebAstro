@@ -8,7 +8,7 @@ import { SiteHeader } from "@/components/site-header";
 import { buildPreviewHtml } from "@/lib/site-render";
 import type { SitePlan } from "@/lib/site-schema";
 import { streamImage, base64FromDataUrl } from "@/lib/stream-image";
-import { Download, Loader2, ImageIcon, TrendingUp, Code2, Eye, Search, RefreshCcw, Sparkles, AlertTriangle, ExternalLink, Upload } from "lucide-react";
+import { Download, Loader2, ImageIcon, TrendingUp, Code2, Eye, Search, RefreshCcw, Sparkles, AlertTriangle, ExternalLink, Upload, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/site/$id")({
@@ -384,6 +384,7 @@ function ImagesTab({ plan, assets, busy, queued, previews, onGenerateClick, onUp
   onUpload: (slotId: string, prompt: string, file: File) => Promise<void>;
 }) {
   const [uploading, setUploading] = useState<string | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
   const existingBySlot = useMemo(() => {
     const m: Record<string, string> = {};
     for (const a of assets) if (a.slot && a.url) m[a.slot] = a.url;
@@ -398,6 +399,16 @@ function ImagesTab({ plan, assets, busy, queued, previews, onGenerateClick, onUp
       toast.error(e.message ?? "Error subiendo la imagen");
     } finally {
       setUploading(null);
+    }
+  }
+
+  async function handleCopyPrompt(slotId: string, prompt: string) {
+    try {
+      await navigator.clipboard.writeText(prompt);
+      setCopied(slotId);
+      setTimeout(() => setCopied((c) => (c === slotId ? null : c)), 1500);
+    } catch {
+      toast.error("No se pudo copiar el prompt");
     }
   }
 
@@ -421,7 +432,17 @@ function ImagesTab({ plan, assets, busy, queued, previews, onGenerateClick, onUp
                 <span className="font-mono text-xs text-muted-foreground">{slot.id}</span>
                 <span className="text-xs text-muted-foreground">{slot.aspect}</span>
               </div>
-              <p className="line-clamp-3 text-xs text-muted-foreground">{slot.prompt}</p>
+              <div className="flex items-start gap-1.5">
+                <p className="line-clamp-3 flex-1 text-xs text-muted-foreground">{slot.prompt}</p>
+                <button
+                  type="button"
+                  onClick={() => handleCopyPrompt(slot.id, slot.prompt)}
+                  title="Copiar prompt"
+                  className="shrink-0 rounded-md p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                >
+                  {copied === slot.id ? <Check className="h-3.5 w-3.5 text-brand" /> : <Copy className="h-3.5 w-3.5" />}
+                </button>
+              </div>
               {(() => {
                 const disabled = busy === slot.id || queued.includes(slot.id) || uploading === slot.id;
                 return (
