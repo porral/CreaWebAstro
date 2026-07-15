@@ -35,25 +35,29 @@ const siteUrl = Astro.site?.toString() ?? "";
 </html>`;
 }
 
-function navDataTs(plan: SitePlan): string {
+function navDataTs(plan: SitePlan, logoPath: string | null): string {
   const items = plan.pages.map((p) => {
     const raw = (p.slug === "index" || p.path === "/") ? "Inicio" : p.slug.replace(/[-_]+/g, " ").trim();
     const label = raw.charAt(0).toUpperCase() + raw.slice(1);
     return { label: label.length > 24 ? label.slice(0, 22) + "…" : label, path: p.path };
   });
   return `export const siteName = ${JSON.stringify(plan.siteName)};
+export const logoPath = ${JSON.stringify(logoPath)};
 export const navItems: { label: string; path: string }[] = ${JSON.stringify(items, null, 2)};
 `;
 }
 
 function headerAstro(): string {
   return `---
-import { siteName, navItems } from "../data/nav";
+import { siteName, navItems, logoPath } from "../data/nav";
 export interface Props { activePath?: string }
 const { activePath } = Astro.props;
 ---
 <header class="nav">
-  <a href="/" style="font-weight:700">{siteName}</a>
+  <a href="/" class={logoPath ? "has-logo" : undefined} style="font-weight:700">
+    {logoPath && <img src={logoPath} alt="" />}
+    {siteName}
+  </a>
   <nav>
     {navItems.map((item) => (
       <a href={item.path} class={activePath === item.path ? "active" : undefined}>{item.label}</a>
@@ -116,8 +120,9 @@ export default defineConfig({
   root.file("public/robots.txt", `User-agent: *\nAllow: /\nSitemap: https://example.com/sitemap-index.xml\n`);
   root.file("public/favicon.svg", `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="${plan.brandColors?.primary ?? "#a76bff"}"/><text x="50%" y="55%" text-anchor="middle" fill="#0e1020" font-family="sans-serif" font-weight="700" font-size="18">${esc(plan.siteName[0] ?? "A")}</text></svg>`);
   root.file("public/styles/global.css", SITE_CSS);
+  const logoPath = assets["logo"]?.url ?? null;
   root.file("src/layouts/Base.astro", baseLayoutAstro(plan));
-  root.file("src/data/nav.ts", navDataTs(plan));
+  root.file("src/data/nav.ts", navDataTs(plan, logoPath));
   root.file("src/components/Header.astro", headerAstro());
   root.file("src/components/Footer.astro", footerAstro());
 

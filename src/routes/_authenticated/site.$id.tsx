@@ -137,6 +137,23 @@ function SitePage() {
     q.refetch();
   }
 
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const logoUrl = assets.find((a) => a.slot === "logo")?.url;
+
+  async function uploadLogo(file: File) {
+    setUploadingLogo(true);
+    try {
+      const dataUrl = await fileToPngDataUrl(file);
+      await saveImg({ data: { siteId: id, slot: "logo", prompt: "Logotipo del sitio", base64: base64FromDataUrl(dataUrl) } });
+      toast.success("Logo subido — ya visible en la cabecera del sitio");
+      q.refetch();
+    } catch (e: any) {
+      toast.error(e.message ?? "Error subiendo el logo");
+    } finally {
+      setUploadingLogo(false);
+    }
+  }
+
   if (q.isLoading) return <FullscreenLoader label="Cargando…" />;
   if (!site) return <div className="p-8">No encontrado.</div>;
 
@@ -159,6 +176,25 @@ function SitePage() {
             )}
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            <label className="flex cursor-pointer items-center gap-2 rounded-md border border-border bg-secondary px-3 py-2 text-sm">
+              {logoUrl ? (
+                <img src={logoUrl} alt="Logo" className="h-6 w-6 rounded object-contain" />
+              ) : (
+                <ImageIcon className="h-4 w-4 text-muted-foreground" />
+              )}
+              {uploadingLogo ? <Loader2 className="h-4 w-4 animate-spin" /> : (logoUrl ? "Cambiar logo" : "Subir logo")}
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                disabled={uploadingLogo}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = "";
+                  if (file) uploadLogo(file);
+                }}
+              />
+            </label>
             <button onClick={() => regen.mutate()} disabled={regen.isPending || isGenerating} className="inline-flex items-center gap-1.5 rounded-md border border-border bg-secondary px-3 py-2 text-sm disabled:opacity-50">
               {regen.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCcw className="h-4 w-4" />} Regenerar
             </button>

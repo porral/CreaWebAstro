@@ -62,6 +62,8 @@ a{color:var(--brand2);text-decoration:none}img{max-width:100%;height:auto;border
 header.nav{position:fixed;top:0;left:0;right:0;z-index:50;height:var(--nav-h);backdrop-filter:saturate(140%) blur(14px);-webkit-backdrop-filter:saturate(140%) blur(14px);background:linear-gradient(180deg,color-mix(in srgb, var(--bg) 85%, transparent),color-mix(in srgb, var(--bg) 60%, transparent));border-bottom:1px solid var(--border);display:flex;align-items:center;gap:1rem;padding:0 clamp(1rem,3vw,2rem)}
 header.nav>a:first-child{font-family:var(--font-heading);font-size:1.05rem;letter-spacing:-.01em;color:var(--fg);white-space:nowrap;display:inline-flex;align-items:center;gap:.55rem}
 header.nav>a:first-child::before{content:"";width:22px;height:22px;border-radius:7px;background:linear-gradient(135deg,var(--brand),var(--brand2));box-shadow:0 4px 14px -2px color-mix(in srgb, var(--brand) 55%, transparent)}
+header.nav>a.has-logo::before{content:none}
+header.nav>a.has-logo img{height:28px;width:auto;max-width:160px;object-fit:contain;border-radius:6px;display:block}
 header.nav nav{margin-left:auto;display:flex;align-items:center;gap:.15rem;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;max-width:100%}
 header.nav nav::-webkit-scrollbar{display:none}
 header.nav nav a{position:relative;color:var(--muted);padding:.5rem .85rem;border-radius:.6rem;font-size:.92rem;font-weight:500;white-space:nowrap;transition:color .18s ease,background .18s ease}
@@ -124,12 +126,14 @@ export function buildPreviewHtml(plan: SitePlan, page: SitePage, assets: AssetMa
   const homePage = plan.pages.find((p) => p.slug === "index" || p.path === "/") ?? plan.pages[0];
   const logoHref = opts?.hrefFor ? esc(opts.hrefFor(homePage)) : "#";
   const logoAttrs = opts?.hrefFor ? "" : ' data-nav-path="/"';
+  const logo = assets["logo"];
+  const logoImg = logo?.url ? `<img src="${esc(logo.url)}" alt="" />` : "";
   return `<!doctype html><html lang="${plan.language}"><head><meta charset="utf-8"><title>${esc(page.title)}</title><meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="${googleFontsHref(plan)}">
 <style>${themeVarsCss(plan)}${SITE_CSS}
 header.nav nav a.active{color:var(--brand2);font-weight:600}</style></head>
-<body><header class="nav"><a href="${logoHref}"${logoAttrs} style="font-weight:700">${esc(plan.siteName)}</a><nav>${nav}</nav></header><main>${sections}</main><footer class="foot">© ${new Date().getFullYear()} ${esc(plan.siteName)}</footer>
+<body><header class="nav"><a href="${logoHref}"${logoAttrs} class="${logo?.url ? "has-logo" : ""}" style="font-weight:700">${logoImg}${esc(plan.siteName)}</a><nav>${nav}</nav></header><main>${sections}</main><footer class="foot">© ${new Date().getFullYear()} ${esc(plan.siteName)}</footer>
 <script>
 document.addEventListener('click', function(e){
   var a = e.target && e.target.closest && e.target.closest('a[data-nav-path]');
