@@ -8,7 +8,7 @@ import { SiteHeader } from "@/components/site-header";
 import { buildPreviewHtml } from "@/lib/site-render";
 import type { SitePlan } from "@/lib/site-schema";
 import { streamImage, base64FromDataUrl } from "@/lib/stream-image";
-import { Download, Loader2, ImageIcon, TrendingUp, Code2, Eye, Search, RefreshCcw, Sparkles } from "lucide-react";
+import { Download, Loader2, ImageIcon, TrendingUp, Code2, Eye, Search, RefreshCcw, Sparkles, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/site/$id")({
@@ -69,7 +69,8 @@ function SitePage() {
   if (q.isLoading) return <FullscreenLoader label="Cargando…" />;
   if (!site) return <div className="p-8">No encontrado.</div>;
 
-  const isGenerating = site.status === "generating" || !plan;
+  const isError = site.status === "error";
+  const isGenerating = !isError && (site.status === "generating" || !plan);
 
   return (
     <div className="min-h-screen">
@@ -91,7 +92,9 @@ function SitePage() {
           </div>
         </header>
 
-        {isGenerating ? (
+        {isError ? (
+          <ErrorView message={site.error_message} onRetry={() => regen.mutate()} retrying={regen.isPending} />
+        ) : isGenerating ? (
           <GeneratingView />
         ) : (
           <>
@@ -126,6 +129,23 @@ function SitePage() {
           </>
         )}
       </main>
+    </div>
+  );
+}
+
+function ErrorView({ message, onRetry, retrying }: { message: string | null | undefined; onRetry: () => void; retrying: boolean }) {
+  return (
+    <div className="surface-card rounded-2xl p-12 text-center">
+      <AlertTriangle className="mx-auto h-10 w-10 text-destructive" />
+      <h2 className="mt-4 font-display text-2xl font-semibold">No se pudo generar el sitio</h2>
+      <p className="mx-auto mt-2 max-w-lg text-sm text-muted-foreground">{message || "Error desconocido."}</p>
+      <button
+        onClick={onRetry}
+        disabled={retrying}
+        className="mx-auto mt-6 inline-flex items-center gap-1.5 rounded-md btn-brand px-4 py-2 text-sm font-semibold hover:btn-brand-hover disabled:opacity-50"
+      >
+        {retrying ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCcw className="h-4 w-4" />} Reintentar
+      </button>
     </div>
   );
 }

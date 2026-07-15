@@ -31,16 +31,30 @@ export const generatePlanFn = createServerFn({ method: "POST" })
     if (!site) throw new Error("Sitio no encontrado");
 
     const { generateSitePlanServer, auditSitePlanServer } = await import("./site-generator.server");
+    const { applyThemeToPlan } = await import("./theme-presets");
+    const { resolveOpenaiApiKey } = await import("./openai-key.server");
     const config = generateInputSchema.parse(site.config);
-    const plan = await generateSitePlanServer(config);
-    const audit = await auditSitePlanServer(plan);
 
-    await db.query(
-      "UPDATE sites SET plan = $1, seo_score = $2, status = 'ready' WHERE id = $3 AND user_id = $4",
-      [JSON.stringify(plan), audit.score, data.siteId, context.userId],
-    );
+    try {
+      const apiKey = await resolveOpenaiApiKey(context.userId);
+      const plan = await generateSitePlanServer(config, undefined, apiKey);
+      applyThemeToPlan(plan, config);
+      const audit = await auditSitePlanServer(plan);
 
-    return { plan, audit };
+      await db.query(
+        "UPDATE sites SET plan = $1, seo_score = $2, status = 'ready', error_message = NULL WHERE id = $3 AND user_id = $4",
+        [JSON.stringify(plan), audit.score, data.siteId, context.userId],
+      );
+
+      return { plan, audit };
+    } catch (e: any) {
+      const message = e?.message ?? "Error desconocido generando el sitio.";
+      await db.query(
+        "UPDATE sites SET status = 'error', error_message = $1 WHERE id = $2 AND user_id = $3",
+        [message, data.siteId, context.userId],
+      );
+      throw e;
+    }
   });
 
 export const listSitesFn = createServerFn({ method: "GET" })
@@ -58,7 +72,7 @@ export const getSiteFn = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const siteRes = await db.query(
-      `SELECT id, name, sector, brief, config, plan, seo_score, status, created_at
+      `SELECT id, name, sector, brief, config, plan, seo_score, status, error_message, created_at
        FROM sites WHERE id = $1 AND user_id = $2`,
       [data.id, context.userId],
     );

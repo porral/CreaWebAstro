@@ -44,8 +44,8 @@ Return ONLY valid minified JSON, no markdown fences, matching exactly this TypeS
 {"siteName":string,"language":string,"seoStrategy":{"primaryKeyword":string,"secondaryKeywords":string[],"audienceIntent":string,"contentAngle":string,"competitorInsights":string},"brandColors":{"primary":string,"accent":string,"background":string,"foreground":string},"jsonLdType":"Organization"|"LocalBusiness"|"Product"|"Article"|"ProfessionalService","pages":[{"slug":string,"path":string,"title":string,"metaDescription":string,"h1":string,"keyword":string,"sections":[{"kind":string,"heading"?:string,"subheading"?:string,"body"?:string,"items"?:[{"title":string,"body":string}],"imageSlot"?:string}]}],"imageSlots":[{"id":string,"prompt":string,"alt":string,"aspect":"16:9"|"1:1"|"4:5"}]}`;
 }
 
-export async function generateSitePlanServer(input: GenerateInput, semrushHints?: string): Promise<SitePlan> {
-  const apiKey = process.env.OPENAI_API_KEY;
+export async function generateSitePlanServer(input: GenerateInput, semrushHints?: string, apiKeyOverride?: string): Promise<SitePlan> {
+  const apiKey = apiKeyOverride || process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error("Missing OPENAI_API_KEY");
 
   const res = await fetch(`${OPENAI_API}/chat/completions`, {
@@ -95,6 +95,9 @@ export async function generateSitePlanServer(input: GenerateInput, semrushHints?
     });
   }
   if (!plan.pages?.length) throw new Error("La IA no devolvió páginas. Reintenta.");
+  // Normalize possibly-missing arrays so downstream rendering/audit never crashes.
+  plan.imageSlots = Array.isArray(plan.imageSlots) ? plan.imageSlots : [];
+  for (const p of plan.pages) p.sections = Array.isArray(p.sections) ? p.sections : [];
   return plan;
 }
 
@@ -109,9 +112,9 @@ export async function auditSitePlanServer(plan: SitePlan): Promise<{ score: numb
     }
     if (!p.h1 || p.h1.length < 10) { score -= 3; suggestions.push(`El H1 de "${p.path}" es demasiado corto.`); }
     if (!p.keyword) { score -= 3; suggestions.push(`Falta keyword objetivo en "${p.path}".`); }
-    if (p.sections.length < 3) { score -= 2; suggestions.push(`La página "${p.path}" tiene pocas secciones.`); }
+    if ((p.sections?.length ?? 0) < 3) { score -= 2; suggestions.push(`La página "${p.path}" tiene pocas secciones.`); }
   }
-  if (plan.seoStrategy.secondaryKeywords.length < 5) { score -= 5; suggestions.push("Añade más keywords secundarias."); }
-  if (!plan.imageSlots.length) { score -= 5; suggestions.push("No hay imágenes definidas."); }
+  if ((plan.seoStrategy?.secondaryKeywords?.length ?? 0) < 5) { score -= 5; suggestions.push("Añade más keywords secundarias."); }
+  if (!plan.imageSlots?.length) { score -= 5; suggestions.push("No hay imágenes definidas."); }
   return { score: Math.max(0, Math.min(100, score)), suggestions };
 }

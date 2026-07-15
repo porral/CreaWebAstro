@@ -11,6 +11,8 @@ export const generateInputSchema = z.object({
   tone: z.enum(["profesional", "cercano", "elegante", "atrevido", "minimalista"]).default("profesional"),
   pages: z.number().int().min(3).max(12).default(5),
   style: z.enum(["moderno", "clasico", "minimal", "atrevido"]).default("moderno"),
+  colorPalette: z.string().default("ai"),
+  fontFamily: z.string().default("inter-space"),
   keywords: z.string().max(500).default(""),
   textModel: z.string().default("gpt-4o-mini"),
   imageModel: z.string().default("gpt-image-1"),
@@ -49,6 +51,7 @@ export interface SitePlan {
     competitorInsights: string;
   };
   brandColors: { primary: string; accent: string; background: string; foreground: string };
+  fontFamily?: { id: string; headingFamily: string; bodyFamily: string; googleFontsParam: string };
   jsonLdType: "Organization" | "LocalBusiness" | "Product" | "Article" | "ProfessionalService";
   pages: SitePage[];
   imageSlots: ImageSlot[];

@@ -2,8 +2,22 @@
 // Astro ZIP export. No JSZip or Node here — server-only work lives in
 // astro-export.server.ts.
 import type { SitePlan, SitePage, SiteSection, ImageSlot } from "./site-schema";
+import { DEFAULT_FONT } from "./theme-presets";
 
 export interface AssetMap { [slot: string]: { url: string; alt: string } }
+
+// CSS custom properties (brand/accent/background/foreground/fonts) shared by
+// the in-app preview and the exported Astro layout.
+export function themeVarsCss(plan: SitePlan): string {
+  const c = plan.brandColors ?? ({} as SitePlan["brandColors"]);
+  const font = plan.fontFamily ?? DEFAULT_FONT;
+  return `:root{--brand:${c.primary ?? "#a76bff"};--brand2:${c.accent ?? "#5cd6ff"};--bg:${c.background ?? "#0e1020"};--fg:${c.foreground ?? "#f5f6fb"};--font-heading:${font.headingFamily};--font-body:${font.bodyFamily}}`;
+}
+
+export function googleFontsHref(plan: SitePlan): string {
+  const font = plan.fontFamily ?? DEFAULT_FONT;
+  return `https://fonts.googleapis.com/css2?${font.googleFontsParam}&display=swap`;
+}
 
 export function esc(s: string) {
   return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -38,16 +52,16 @@ export function renderSection(s: SiteSection, assets: AssetMap, imageSlots: Imag
   }
 }
 
-export const SITE_CSS = `:root{--bg:#0e1020;--fg:#f5f6fb;--brand:#a76bff;--brand2:#5cd6ff;--muted:#a0a4be;--card:#171a2e;--border:rgba(255,255,255,.08);--nav-h:64px}
-*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--fg);font-family:'Inter',system-ui,sans-serif;line-height:1.6;padding-top:var(--nav-h);-webkit-font-smoothing:antialiased}
-h1,h2,h3{font-family:'Space Grotesk','Inter',sans-serif;letter-spacing:-.02em;margin:0 0 .5em;line-height:1.15}
+export const SITE_CSS = `:root{--nav-h:64px;--card:color-mix(in srgb, var(--fg) 7%, var(--bg));--border:color-mix(in srgb, var(--fg) 10%, transparent);--muted:color-mix(in srgb, var(--fg) 58%, var(--bg))}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font-body);line-height:1.6;padding-top:var(--nav-h);-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--font-heading);letter-spacing:-.02em;margin:0 0 .5em;line-height:1.15}
 h1{font-size:clamp(2rem,5.5vw,4rem)}h2{font-size:clamp(1.6rem,3.8vw,2.6rem);margin-top:0}h3{font-size:clamp(1.15rem,2vw,1.4rem)}
 p{color:var(--muted);margin:.5em 0}p.lead{color:var(--fg);font-size:clamp(1rem,1.6vw,1.2rem)}
 a{color:var(--brand2);text-decoration:none}img{max-width:100%;height:auto;border-radius:1rem;display:block}
 [id]{scroll-margin-top:calc(var(--nav-h) + 12px)}
-header.nav{position:fixed;top:0;left:0;right:0;z-index:50;height:var(--nav-h);backdrop-filter:saturate(140%) blur(14px);-webkit-backdrop-filter:saturate(140%) blur(14px);background:linear-gradient(180deg,rgba(14,16,32,.85),rgba(14,16,32,.6));border-bottom:1px solid var(--border);display:flex;align-items:center;gap:1rem;padding:0 clamp(1rem,3vw,2rem)}
-header.nav>a:first-child{font-family:'Space Grotesk',sans-serif;font-size:1.05rem;letter-spacing:-.01em;color:var(--fg);white-space:nowrap;display:inline-flex;align-items:center;gap:.55rem}
-header.nav>a:first-child::before{content:"";width:22px;height:22px;border-radius:7px;background:linear-gradient(135deg,var(--brand),var(--brand2));box-shadow:0 4px 14px -2px rgba(167,107,255,.55)}
+header.nav{position:fixed;top:0;left:0;right:0;z-index:50;height:var(--nav-h);backdrop-filter:saturate(140%) blur(14px);-webkit-backdrop-filter:saturate(140%) blur(14px);background:linear-gradient(180deg,color-mix(in srgb, var(--bg) 85%, transparent),color-mix(in srgb, var(--bg) 60%, transparent));border-bottom:1px solid var(--border);display:flex;align-items:center;gap:1rem;padding:0 clamp(1rem,3vw,2rem)}
+header.nav>a:first-child{font-family:var(--font-heading);font-size:1.05rem;letter-spacing:-.01em;color:var(--fg);white-space:nowrap;display:inline-flex;align-items:center;gap:.55rem}
+header.nav>a:first-child::before{content:"";width:22px;height:22px;border-radius:7px;background:linear-gradient(135deg,var(--brand),var(--brand2));box-shadow:0 4px 14px -2px color-mix(in srgb, var(--brand) 55%, transparent)}
 header.nav nav{margin-left:auto;display:flex;align-items:center;gap:.15rem;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;max-width:100%}
 header.nav nav::-webkit-scrollbar{display:none}
 header.nav nav a{position:relative;color:var(--muted);padding:.5rem .85rem;border-radius:.6rem;font-size:.92rem;font-weight:500;white-space:nowrap;transition:color .18s ease,background .18s ease}
@@ -57,14 +71,14 @@ header.nav nav a.active::after{content:"";position:absolute;left:20%;right:20%;b
 @media (max-width:640px){header.nav{padding:0 .85rem;gap:.5rem}header.nav>a:first-child{font-size:.95rem}header.nav nav a{padding:.4rem .65rem;font-size:.85rem}}
 main{max-width:1100px;margin:0 auto;padding:1.5rem clamp(1rem,3vw,1.5rem)}
 section{margin:clamp(2.5rem,6vw,4.5rem) 0}
-.hero{position:relative;text-align:center;padding:clamp(3rem,7vw,5.5rem) 1rem clamp(2rem,4vw,3rem);background:radial-gradient(60% 60% at 50% 0%,rgba(167,107,255,.25),transparent 70%)}
+.hero{position:relative;text-align:center;padding:clamp(3rem,7vw,5.5rem) 1rem clamp(2rem,4vw,3rem);background:radial-gradient(60% 60% at 50% 0%,color-mix(in srgb, var(--brand) 25%, transparent),transparent 70%)}
 .hero .hero-inner{max-width:820px;margin:0 auto}
 .hero img{margin:clamp(1.5rem,4vw,2.5rem) auto 0;max-width:min(900px,100%)}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:clamp(.9rem,2vw,1.25rem);margin-top:2rem}
 .grid article,.grid blockquote{background:var(--card);border:1px solid var(--border);padding:clamp(1.1rem,2.5vw,1.6rem);border-radius:1rem}
 blockquote{margin:0}blockquote footer{color:var(--muted);margin-top:.5rem;font-size:.9rem}
-.cta{text-align:center;background:linear-gradient(135deg,rgba(167,107,255,.15),rgba(92,214,255,.1));border:1px solid var(--border);padding:clamp(1.75rem,5vw,3rem);border-radius:1.5rem}
-.btn{display:inline-block;background:linear-gradient(135deg,var(--brand),var(--brand2));color:#0e1020;padding:.9rem 1.6rem;border-radius:.75rem;font-weight:600;margin-top:1rem;box-shadow:0 12px 30px -12px rgba(167,107,255,.6);transition:transform .15s ease}
+.cta{text-align:center;background:linear-gradient(135deg,color-mix(in srgb, var(--brand) 15%, transparent),color-mix(in srgb, var(--brand2) 10%, transparent));border:1px solid var(--border);padding:clamp(1.75rem,5vw,3rem);border-radius:1.5rem}
+.btn{display:inline-block;background:linear-gradient(135deg,var(--brand),var(--brand2));color:#0e1020;padding:.9rem 1.6rem;border-radius:.75rem;font-weight:600;margin-top:1rem;box-shadow:0 12px 30px -12px color-mix(in srgb, var(--brand) 60%, transparent);transition:transform .15s ease}
 .btn:hover{transform:translateY(-1px)}
 details{background:var(--card);border:1px solid var(--border);padding:1rem 1.25rem;border-radius:.75rem;margin:.5rem 0}
 summary{cursor:pointer;font-weight:600;color:var(--fg)}
@@ -104,12 +118,10 @@ export function buildPreviewHtml(plan: SitePlan, page: SitePage, assets: AssetMa
       const a = assets[slotId];
       return a?.url ? `src="${esc(a.url)}"` : `src=""`;
     });
-  const primary = plan.brandColors?.primary ?? "#a76bff";
-  const accent = plan.brandColors?.accent ?? "#5cd6ff";
   return `<!doctype html><html lang="${plan.language}"><head><meta charset="utf-8"><title>${esc(page.title)}</title><meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600&display=swap">
-<style>:root{--brand:${primary};--brand2:${accent}}${SITE_CSS}
+<link rel="stylesheet" href="${googleFontsHref(plan)}">
+<style>${themeVarsCss(plan)}${SITE_CSS}
 header.nav nav a.active{color:var(--brand2);font-weight:600}</style></head>
 <body><header class="nav"><a href="#" data-nav-path="/" style="font-weight:700">${esc(plan.siteName)}</a><nav>${nav}</nav></header><main>${sections}</main><footer class="foot">© ${new Date().getFullYear()} ${esc(plan.siteName)}</footer>
 <script>

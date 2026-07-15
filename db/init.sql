@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS sites (
   plan jsonb,
   seo_score int,
   status text NOT NULL DEFAULT 'draft',
+  error_message text,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );

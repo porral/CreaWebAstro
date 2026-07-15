@@ -20,6 +20,7 @@ const DEFAULTS: UserSettings = {
   style: "moderno",
   pages: 5,
   useSemrush: false,
+  openaiApiKey: "",
 };
 
 function SettingsPage() {
@@ -57,6 +58,20 @@ function SettingsPage() {
             onSubmit={(e) => { e.preventDefault(); mut.mutate(); }}
             className="surface-card space-y-5 rounded-2xl p-6"
           >
+            <Field label="OpenAI API Key">
+              <input
+                type="password"
+                autoComplete="off"
+                value={form.openaiApiKey}
+                onChange={(e) => up("openaiApiKey", e.target.value)}
+                className={inputCls}
+                placeholder="sk-..."
+              />
+              <span className="mt-1 block text-xs text-muted-foreground">
+                Se usa para generar sitios e imágenes. Si la dejas vacía, se usa la del servidor (si existe).
+              </span>
+            </Field>
+
             <Field label="Modelo de texto por defecto">
               <select value={form.textModel} onChange={(e) => up("textModel", e.target.value)} className={inputCls}>
                 <option value="gpt-4o-mini">GPT-4o mini (recomendado)</option>

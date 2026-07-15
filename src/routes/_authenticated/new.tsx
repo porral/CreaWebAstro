@@ -5,6 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { createSiteFn, generatePlanFn } from "@/lib/sites.functions";
 import { getSettingsFn } from "@/lib/settings.functions";
 import { SECTORS, type GenerateInput } from "@/lib/site-schema";
+import { PALETTES, FONTS } from "@/lib/theme-presets";
 import { SiteHeader } from "@/components/site-header";
 import { Wand2, Loader2, Settings as SettingsIcon } from "lucide-react";
 import { toast } from "sonner";
@@ -32,6 +33,8 @@ function NewSitePage() {
     tone: "profesional",
     pages: 5,
     style: "moderno",
+    colorPalette: "ai",
+    fontFamily: "inter-space",
     keywords: "",
     textModel: "gpt-4o-mini",
     imageModel: "gpt-image-1",
@@ -131,6 +134,41 @@ function NewSitePage() {
               <select value={form.style} onChange={(e) => update("style", e.target.value as any)} className={inputCls}>
                 <option value="moderno">Moderno</option><option value="clasico">Clásico</option>
                 <option value="minimal">Minimal</option><option value="atrevido">Atrevido</option>
+              </select>
+            </Field>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Gama de colores">
+              <div className="grid grid-cols-3 gap-2">
+                {PALETTES.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => update("colorPalette", p.id)}
+                    className={`flex flex-col items-center gap-1.5 rounded-lg border p-2 text-[11px] transition-colors ${
+                      form.colorPalette === p.id ? "border-brand bg-secondary/60" : "border-border hover:border-muted-foreground"
+                    }`}
+                  >
+                    {p.colors ? (
+                      <span className="flex h-6 w-full overflow-hidden rounded-md">
+                        <span className="flex-1" style={{ background: p.colors.background }} />
+                        <span className="flex-1" style={{ background: p.colors.primary }} />
+                        <span className="flex-1" style={{ background: p.colors.accent }} />
+                      </span>
+                    ) : (
+                      <span className="grid h-6 w-full place-items-center rounded-md bg-secondary text-muted-foreground">
+                        <Wand2 className="h-3 w-3" />
+                      </span>
+                    )}
+                    <span className="truncate">{p.label}</span>
+                  </button>
+                ))}
+              </div>
+            </Field>
+            <Field label="Tipografía">
+              <select value={form.fontFamily} onChange={(e) => update("fontFamily", e.target.value)} className={inputCls}>
+                {FONTS.map((f) => <option key={f.id} value={f.id}>{f.label}</option>)}
               </select>
             </Field>
           </div>

@@ -1,11 +1,9 @@
 // Server-only: builds an Astro project ZIP from a SitePlan and image buffers.
 import JSZip from "jszip";
 import type { SitePlan, SitePage } from "./site-schema";
-import { renderSection, esc, SITE_CSS, type AssetMap } from "./site-render";
+import { renderSection, esc, SITE_CSS, themeVarsCss, googleFontsHref, type AssetMap } from "./site-render";
 
 function baseLayoutAstro(plan: SitePlan) {
-  const primary = plan.brandColors?.primary ?? "#a76bff";
-  const accent = plan.brandColors?.accent ?? "#5cd6ff";
   return `---
 export interface Props { title: string; description: string; canonical: string; jsonLd?: object; }
 const { title, description, canonical, jsonLd } = Astro.props;
@@ -26,9 +24,9 @@ const siteUrl = Astro.site?.toString() ?? "";
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600&display=swap" />
+    <link rel="stylesheet" href="${googleFontsHref(plan)}" />
     <link rel="stylesheet" href="/styles/global.css" />
-    <style>:root{--brand:${primary};--brand2:${accent}}</style>
+    <style>${themeVarsCss(plan)}</style>
     {jsonLd && <script type="application/ld+json" set:html={JSON.stringify(jsonLd)}></script>}
   </head>
   <body>
