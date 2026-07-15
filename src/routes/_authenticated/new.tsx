@@ -29,6 +29,9 @@ function NewSitePage() {
     brief: "",
     audience: "",
     location: "",
+    services: "",
+    features: "",
+    benefits: "",
     language: "es",
     tone: "profesional",
     pages: 5,
@@ -51,7 +54,6 @@ function NewSitePage() {
       tone: s.tone ?? f.tone,
       style: s.style ?? f.style,
       pages: s.pages ?? f.pages,
-      textModel: s.textModel ?? f.textModel,
       imageModel: s.imageModel ?? f.imageModel,
       useSemrush: s.useSemrush ?? f.useSemrush,
     }));
@@ -112,6 +114,24 @@ function NewSitePage() {
           <Field label="Público objetivo (opcional)">
             <input value={form.audience} onChange={(e) => update("audience", e.target.value)} className={inputCls} placeholder="Ej: freelancers 25-40 años en España" />
           </Field>
+
+          <div className="border-t border-border pt-5">
+            <p className="mb-3 text-xs uppercase tracking-widest text-muted-foreground">
+              Contenido real de la landing (opcional — si lo rellenas, la IA lo usa tal cual en vez de inventarlo)
+            </p>
+            <div className="space-y-4">
+              <Field label="Servicios que ofreces (uno por línea o separados por coma)">
+                <textarea rows={3} value={form.services} onChange={(e) => update("services", e.target.value)} className={inputCls} placeholder="Desayunos, Menú del día, Catering de eventos…" />
+              </Field>
+              <Field label="Características / diferenciales">
+                <textarea rows={3} value={form.features} onChange={(e) => update("features", e.target.value)} className={inputCls} placeholder="Producto local, terraza, wifi gratis, aparcamiento…" />
+              </Field>
+              <Field label="Beneficios clave para el cliente">
+                <textarea rows={3} value={form.benefits} onChange={(e) => update("benefits", e.target.value)} className={inputCls} placeholder="Ahorra tiempo, mejor precio del barrio, atención personalizada…" />
+              </Field>
+            </div>
+          </div>
+
           <Field label="Keywords que quieres targetear (opcional, separadas por coma)">
             <input value={form.keywords} onChange={(e) => update("keywords", e.target.value)} className={inputCls} placeholder="cafetería especialidad, café de origen, brunch madrid" />
           </Field>
@@ -173,15 +193,9 @@ function NewSitePage() {
             </Field>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2">
             <Field label={`Páginas (${form.pages})`}>
               <input type="range" min={3} max={12} value={form.pages} onChange={(e) => update("pages", Number(e.target.value))} className="w-full accent-[color:var(--brand)]" />
-            </Field>
-            <Field label="Modelo texto">
-              <select value={form.textModel} onChange={(e) => update("textModel", e.target.value)} className={inputCls}>
-                <option value="gpt-4o-mini">GPT-4o mini (recomendado)</option>
-                <option value="gpt-4o">GPT-4o (máxima calidad)</option>
-              </select>
             </Field>
             <Field label="Modelo imagen">
               <select value={form.imageModel} onChange={(e) => update("imageModel", e.target.value)} className={inputCls}>
@@ -189,6 +203,10 @@ function NewSitePage() {
               </select>
             </Field>
           </div>
+          <p className="text-xs text-muted-foreground">
+            El proveedor y modelo de texto se eligen en{" "}
+            <Link to="/settings" className="text-brand hover:underline">Ajustes de IA</Link>.
+          </p>
 
           <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-border bg-secondary/40 p-3 text-sm">
             <input type="checkbox" checked={form.useSemrush} onChange={(e) => update("useSemrush", e.target.checked)} className="accent-[color:var(--brand)]" />

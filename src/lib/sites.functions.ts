@@ -32,12 +32,12 @@ export const generatePlanFn = createServerFn({ method: "POST" })
 
     const { generateSitePlanServer, auditSitePlanServer } = await import("./site-generator.server");
     const { applyThemeToPlan } = await import("./theme-presets");
-    const { resolveOpenaiApiKey } = await import("./openai-key.server");
+    const { resolveTextProviderConfig } = await import("./ai-keys.server");
     const config = generateInputSchema.parse(site.config);
 
     try {
-      const apiKey = await resolveOpenaiApiKey(context.userId);
-      const plan = await generateSitePlanServer(config, undefined, apiKey);
+      const { provider, apiKey, model } = await resolveTextProviderConfig(context.userId);
+      const plan = await generateSitePlanServer(config, { baseUrl: provider.baseUrl, apiKey, model });
       applyThemeToPlan(plan, config);
       const audit = await auditSitePlanServer(plan);
 
@@ -55,6 +55,44 @@ export const generatePlanFn = createServerFn({ method: "POST" })
       );
       throw e;
     }
+  });
+
+// Rewrite a single page's copy to be more valuable and better keyword-aligned
+// with its own title, without touching the rest of the plan.
+export const improvePageFn = createServerFn({ method: "POST" })
+  .middleware([requireAuth])
+  .inputValidator((input: unknown) =>
+    z.object({ siteId: z.string().uuid(), slug: z.string().min(1) }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const siteRes = await db.query("SELECT id, config, plan FROM sites WHERE id = $1 AND user_id = $2", [
+      data.siteId,
+      context.userId,
+    ]);
+    const site = siteRes.rows[0];
+    if (!site?.plan) throw new Error("Sitio no encontrado o sin plan");
+
+    const config = generateInputSchema.parse(site.config);
+    const plan = site.plan as import("./site-schema").SitePlan;
+    const pageIdx = plan.pages.findIndex((p) => p.slug === data.slug);
+    if (pageIdx === -1) throw new Error("Página no encontrada");
+
+    const { improvePageServer, auditSitePlanServer } = await import("./site-generator.server");
+    const { resolveTextProviderConfig } = await import("./ai-keys.server");
+    const { provider, apiKey, model } = await resolveTextProviderConfig(context.userId);
+
+    const improved = await improvePageServer(config, plan, plan.pages[pageIdx], { baseUrl: provider.baseUrl, apiKey, model });
+    plan.pages[pageIdx] = improved;
+    const audit = await auditSitePlanServer(plan);
+
+    await db.query("UPDATE sites SET plan = $1, seo_score = $2 WHERE id = $3 AND user_id = $4", [
+      JSON.stringify(plan),
+      audit.score,
+      data.siteId,
+      context.userId,
+    ]);
+
+    return { plan, audit };
   });
 
 export const listSitesFn = createServerFn({ method: "GET" })

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getSettingsFn, saveSettingsFn, type UserSettings } from "@/lib/settings.functions";
+import { TEXT_PROVIDERS, getTextProvider } from "@/lib/ai-providers";
 import { SiteHeader } from "@/components/site-header";
 import { Settings as SettingsIcon, Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
@@ -13,6 +14,7 @@ export const Route = createFileRoute("/_authenticated/settings")({
 });
 
 const DEFAULTS: UserSettings = {
+  textProvider: "openai",
   textModel: "gpt-4o-mini",
   imageModel: "gpt-image-1",
   language: "es",
@@ -20,7 +22,7 @@ const DEFAULTS: UserSettings = {
   style: "moderno",
   pages: 5,
   useSemrush: false,
-  openaiApiKey: "",
+  apiKeys: {},
 };
 
 function SettingsPage() {
@@ -41,6 +43,13 @@ function SettingsPage() {
     setForm((f) => ({ ...f, [k]: v }));
   }
 
+  const provider = getTextProvider(form.textProvider);
+
+  function selectProvider(providerId: string) {
+    const p = getTextProvider(providerId);
+    setForm((f) => ({ ...f, textProvider: providerId, textModel: p.models[0]!.id }));
+  }
+
   return (
     <div className="min-h-screen">
       <SiteHeader />
@@ -58,31 +67,49 @@ function SettingsPage() {
             onSubmit={(e) => { e.preventDefault(); mut.mutate(); }}
             className="surface-card space-y-5 rounded-2xl p-6"
           >
-            <Field label="OpenAI API Key">
-              <input
-                type="password"
-                autoComplete="off"
-                value={form.openaiApiKey}
-                onChange={(e) => up("openaiApiKey", e.target.value)}
-                className={inputCls}
-                placeholder="sk-..."
-              />
-              <span className="mt-1 block text-xs text-muted-foreground">
-                Se usa para generar sitios e imágenes. Si la dejas vacía, se usa la del servidor (si existe).
-              </span>
-            </Field>
-
-            <Field label="Modelo de texto por defecto">
-              <select value={form.textModel} onChange={(e) => up("textModel", e.target.value)} className={inputCls}>
-                <option value="gpt-4o-mini">GPT-4o mini (recomendado)</option>
-                <option value="gpt-4o">GPT-4o (máxima calidad)</option>
-              </select>
-            </Field>
+            <div className="rounded-lg border border-border p-4">
+              <p className="mb-3 text-xs uppercase tracking-widest text-muted-foreground">
+                Proveedor de texto (genera el plan y el copy de cada sitio)
+              </p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Proveedor">
+                  <select value={form.textProvider} onChange={(e) => selectProvider(e.target.value)} className={inputCls}>
+                    {TEXT_PROVIDERS.map((p) => (
+                      <option key={p.id} value={p.id}>{p.label}{p.free ? " — gratis" : ""}</option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="Modelo">
+                  <select value={form.textModel} onChange={(e) => up("textModel", e.target.value)} className={inputCls}>
+                    {provider.models.map((m) => <option key={m.id} value={m.id}>{m.label}</option>)}
+                  </select>
+                </Field>
+              </div>
+              <Field label={`API key de ${provider.label}`}>
+                <input
+                  type="password"
+                  autoComplete="off"
+                  value={form.apiKeys[form.textProvider] ?? ""}
+                  onChange={(e) => up("apiKeys", { ...form.apiKeys, [form.textProvider]: e.target.value })}
+                  className={inputCls}
+                  placeholder={provider.id === "openai" ? "sk-..." : "clave de API"}
+                />
+                <span className="mt-1 block text-xs text-muted-foreground">
+                  Si la dejas vacía, se usa la del servidor (si existe).{" "}
+                  <a href={provider.keyHelpUrl} target="_blank" rel="noopener noreferrer" className="text-brand hover:underline">
+                    Consigue una clave de {provider.label} →
+                  </a>
+                </span>
+              </Field>
+            </div>
 
             <Field label="Modelo de imagen por defecto">
               <select value={form.imageModel} onChange={(e) => up("imageModel", e.target.value)} className={inputCls}>
                 <option value="gpt-image-1">gpt-image-1</option>
               </select>
+              <span className="mt-1 block text-xs text-muted-foreground">
+                Las imágenes siempre se generan con OpenAI (clave de OpenAI arriba, aunque uses otro proveedor para el texto).
+              </span>
             </Field>
 
             <div className="grid gap-4 sm:grid-cols-3">

@@ -4,6 +4,7 @@ import { db } from "@/lib/db.server";
 import { z } from "zod";
 
 export const userSettingsSchema = z.object({
+  textProvider: z.string().default("openai"),
   textModel: z.string().default("gpt-4o-mini"),
   imageModel: z.string().default("gpt-image-1"),
   language: z.enum(["es", "en", "pt", "fr", "de", "it"]).default("es"),
@@ -11,7 +12,9 @@ export const userSettingsSchema = z.object({
   style: z.enum(["moderno", "clasico", "minimal", "atrevido"]).default("moderno"),
   pages: z.number().int().min(3).max(12).default(5),
   useSemrush: z.boolean().default(false),
-  openaiApiKey: z.string().default(""),
+  // API keys per text provider id ("openai", "groq", "deepseek", "openrouter"),
+  // plus a dedicated "openai" one is also used for image generation.
+  apiKeys: z.record(z.string(), z.string()).default({}),
 });
 export type UserSettings = z.infer<typeof userSettingsSchema>;
 
@@ -27,22 +30,28 @@ export const getSettingsFn = createServerFn({ method: "GET" })
     const result = await db.query("SELECT settings FROM users WHERE id = $1", [context.userId]);
     const raw = (result.rows[0]?.settings ?? {}) as Record<string, unknown>;
     const parsed = userSettingsSchema.parse({ ...userSettingsSchema.parse({}), ...raw });
-    return { ...parsed, openaiApiKey: maskKey(parsed.openaiApiKey) };
+    const maskedKeys = Object.fromEntries(
+      Object.entries(parsed.apiKeys).map(([provider, key]) => [provider, maskKey(key)]),
+    );
+    return { ...parsed, apiKeys: maskedKeys };
   });
 
 export const saveSettingsFn = createServerFn({ method: "POST" })
   .middleware([requireAuth])
   .inputValidator((input: unknown) => userSettingsSchema.parse(input))
   .handler(async ({ data, context }) => {
-    // Keep the previously stored key when the field still holds the masked
-    // placeholder (i.e. the user didn't touch it while saving other settings).
-    let openaiApiKey = data.openaiApiKey;
-    if (openaiApiKey.startsWith(KEY_MASK)) {
-      const existing = await db.query("SELECT settings FROM users WHERE id = $1", [context.userId]);
-      openaiApiKey = ((existing.rows[0]?.settings ?? {}) as Record<string, unknown>).openaiApiKey as string ?? "";
-    }
+    // Keep previously stored keys for any provider whose field still holds
+    // the masked placeholder (i.e. the user didn't touch it this save).
+    const existing = await db.query("SELECT settings FROM users WHERE id = $1", [context.userId]);
+    const existingKeys = (((existing.rows[0]?.settings ?? {}) as Record<string, unknown>).apiKeys ?? {}) as Record<string, string>;
+    const apiKeys = Object.fromEntries(
+      Object.entries(data.apiKeys).map(([provider, key]) => [
+        provider,
+        key.startsWith(KEY_MASK) ? (existingKeys[provider] ?? "") : key,
+      ]),
+    );
     await db.query("UPDATE users SET settings = $1 WHERE id = $2", [
-      JSON.stringify({ ...data, openaiApiKey }),
+      JSON.stringify({ ...data, apiKeys }),
       context.userId,
     ]);
     return { ok: true };

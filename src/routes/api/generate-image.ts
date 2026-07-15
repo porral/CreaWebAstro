@@ -13,7 +13,7 @@ export const Route = createFileRoute("/api/generate-image")({
         const userId = token ? await verifySessionToken(token) : null;
         if (!userId) return new Response("Unauthorized", { status: 401 });
 
-        const { resolveOpenaiApiKey } = await import("@/lib/openai-key.server");
+        const { resolveOpenaiApiKey } = await import("@/lib/ai-keys.server");
         const key = await resolveOpenaiApiKey(userId);
         if (!key) return new Response("Missing OPENAI_API_KEY", { status: 500 });
 
